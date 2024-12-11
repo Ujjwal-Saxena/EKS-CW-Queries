@@ -1,0 +1,44 @@
+CONTROL PLANE QUERIES:
+
+fields @timestamp, @message
+| filter @logStream like /kube-apiserver/
+| filter requestURI like /metrics/ 
+| filter responseStatus.code != 200
+| sort @timestamp desc
+| limit 20
+
+fields @timestamp, @message
+| filter @logStream like /kube-apiserver-audit/
+| filter requestURI like /metrics.k8s.io/
+| sort @timestamp desc
+| limit 20
+
+How do I check if AWS Fargate OS patching has deleted my pods or nodes?
+To check that the eviction API appears in the audit logs, use this example query:
+filter @logStream like /^kube-apiserver-audit/
+| fields @timestamp, user.username,user.extra.canonicalArn.0, responseStatus.code, responseObject.status, responseStatus.message
+| sort @timestamp desc
+| filter verb == "create" and objectRef.subresource == 'eviction'
+
+To throttel CoreDNS:
+> while true; do nslookup google.com; done
+
+Take tcpdump:
+> SSH into instance in which coredns is running 
+> cat /etc/resolv.conf
+## Copy name server value 
+> yum install tcpdump -y
+> tcpdump -I any port 53 and host <coredns-nameserver-value> and host <coredns-instance-public-ip> -n 
+
+————
+
+Also, in order to get details of all “Delete” operations on any other service account “Service-account”, then kindly run below query in log insights:
+```````````````
+filter @logStream like /^kube-apiserver-audit/
+| fields @timestamp, verb as Action, objectRef.resource as Resource, objectRef.name as Service_Account_Name, user.username as UserAgent
+| filter verb == "delete" and objectRef.resource like "serviceaccounts"
+| sort @timestamp desc
+
+```````````````
+
+
